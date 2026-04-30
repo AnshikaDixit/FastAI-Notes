@@ -1,0 +1,1 @@
+# With __init__.py present (even empty), Python recognizes the folder as a package and imports work correctly.
