@@ -1,4 +1,5 @@
-fastapi
-uvicorn[standard]
-sqlalchemy
-pydantic
+#1. What tools are installed
+fastapi                  # the web framework
+uvicorn[standard]        # the server that runs FastAPI (like Apache/nginx, but lightweight)
+sqlalchemy               # the orm - lets you talk to the database using Python objects
+pydantic                 # the schema - validates and serializes data shapes

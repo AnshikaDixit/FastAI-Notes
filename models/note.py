@@ -1,9 +1,11 @@
 # models/note.py — Pydantic schemas (request/response shapes)
+# 5. What a Note looks like over the network
 from datetime import datetime
 from pydantic import BaseModel
 from pydantic import ConfigDict
 
-
+# Whats happening? : We are defining a base schema for our Note model. This schema will be used for both creating and updating notes. 
+# Why is it happening?: This is done to ensure that all notes have a title, description, and optional personal field. It is also used for validation of the incoming data. 
 class NoteBase(BaseModel):
     title: str
     description: str
