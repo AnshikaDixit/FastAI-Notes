@@ -16,6 +16,8 @@ A new developer should be able to read these docs from top to bottom and fully u
 |------|---------------|
 | [day-01.md](./day-01.md) | Project setup, FastAPI basics, in-memory CRUD → SQLite + SQLAlchemy migration, full project architecture |
 | [day-02.md](./day-02.md) | Dockerization, Nginx reverse proxy, AWS EC2 deployment, data persistence with Docker volumes |
+| [day-03.md](./day-03.md) | CI/CD with GitHub Actions — auto-deploy to EC2 on every git push |
+| [deployment-guide.md](./deployment-guide.md) | ⭐ Reusable step-by-step deployment reference — use this for any future project |
 
 ---
 

@@ -1,0 +1,22 @@
+name: Deploy to EC2
+
+# Trigger: runs automatically on every push to the main branch
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest   # GitHub spins up a fresh Ubuntu VM to run this job
+
+    steps:
+      - name: SSH into EC2 and deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}         # your EC2 public IP
+          username: ${{ secrets.EC2_USERNAME }}  # ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}        # contents of your .pem file
+          script: |
+            cd ~/FastAI-Notes
+            git pull origin main
+            docker compose up -d --build
