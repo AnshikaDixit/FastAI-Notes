@@ -15,6 +15,7 @@ A new developer should be able to read these docs from top to bottom and fully u
 | File | What it covers |
 |------|---------------|
 | [day-01.md](./day-01.md) | Project setup, FastAPI basics, in-memory CRUD → SQLite + SQLAlchemy migration, full project architecture |
+| [day-02.md](./day-02.md) | Dockerization, Nginx reverse proxy, AWS EC2 deployment, data persistence with Docker volumes |
 
 ---
 

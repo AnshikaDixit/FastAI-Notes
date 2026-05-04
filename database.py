@@ -1,10 +1,14 @@
 # database.py
 #3. How it connects to the DB
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
-# SQLite database file will be created at project root as notes.db
-DATABASE_URL = "sqlite:///./notes.db"
+# DATABASE_URL is read from environment variable if set (Docker sets it to /app/data/notes.db)
+# Falls back to ./notes.db for local development — so nothing breaks when running locally
+# In Docker: DATABASE_URL=sqlite:////app/data/notes.db  (4 slashes = absolute path)
+# Locally:   DATABASE_URL not set → uses sqlite:///./notes.db (relative path)
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./notes.db")
 
 engine = create_engine( #Engine is the core thing in sqlalchemy which interacts with the database
     DATABASE_URL,
