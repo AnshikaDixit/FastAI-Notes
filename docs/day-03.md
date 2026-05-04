@@ -206,24 +206,45 @@ Every deployment is logged in GitHub:
 
 ---
 
-## 🐛 Common Errors & Fixes
+## 🐛 Common Errors & Fixes (from real experience)
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `Host key verification failed` | First SSH connection needs host key acceptance | Add `script: ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts` as a step before SSH |
-| `Permission denied (publickey)` | Wrong SSH key in secrets | Re-copy the `.pem` contents including header/footer |
-| `cd: FastAI-Notes: No such file or directory` | Repo wasn't cloned on EC2 yet | SSH in manually and run `git clone ...` first |
-| Workflow doesn't trigger | Wrong branch name in `branches: [main]` | Check your default branch name — could be `master` |
-| Old code still running | `docker compose up` didn't rebuild | Add `--build` flag — always needed to pick up code changes |
+| `ssh: no key found` | `.pem` copied incorrectly | Run `cat your-key.pem` → paste everything from `-----BEGIN...` to `-----END...` |
+| `%` at end of `.pem` output | zsh shell indicator — NOT part of the key | Stop copying before the `%`. It's a display artifact, not key content |
+| `dial tcp ***:22: i/o timeout` | Wrong IP in `EC2_HOST` — EC2 public IP changed after stop/start | Check current IP in AWS Console → EC2 → update `EC2_HOST` secret |
+| `dial tcp ***:22: i/o timeout` | Port 22 not open to all IPs in Security Group | Edit inbound rules → SSH rule → Source: `0.0.0.0/0` |
+| `Permission denied (publickey)` | Wrong SSH key format in secret | Re-copy the `.pem` contents including header/footer, exclude `%` |
+| `cd: FastAI-Notes: No such file or directory` | Repo not cloned on EC2 yet | SSH in manually and run `git clone ...` first |
+| Workflow doesn't trigger | Wrong branch name in `branches: [main]` | Check default branch name — could be `master` |
+| Old code still running after deploy | Image not rebuilt | Always use `--build` flag |
+
+> ⚠️ **EC2 public IPs are not permanent.** Every stop + start assigns a new IP and breaks `EC2_HOST`. Fix permanently with an Elastic IP (see below).
+
+---
+
+## 🔒 Permanent Fix — Elastic IP (do this once)
+
+An Elastic IP is a **static public IP** that stays attached to your instance forever — survives stop/start.
+
+```
+AWS Console → EC2 → left sidebar → Elastic IPs
+→ Allocate Elastic IP address → Allocate
+→ Select the new IP → Actions → Associate Elastic IP address
+→ Choose your EC2 instance → Associate
+```
+
+Then update `EC2_HOST` in GitHub Secrets to the Elastic IP — never needs updating again.
 
 ---
 
 ## ✅ End of Day 3 — What Works
 
-- Every `git push` to `main` → auto-deploys to EC2 ✅
+- Every `git push` to `main` → auto-deploys to EC2 in ~10 seconds ✅
 - Full deployment history visible in GitHub Actions tab ✅
 - Zero manual SSH needed for routine deployments ✅
 - Secrets stored encrypted, never visible in logs ✅
+- Troubleshooting: wrong IP + SSH key format issues found and fixed ✅
 
 ---
 
@@ -240,3 +261,7 @@ Every deployment is logged in GitHub:
 | `${{ secrets.NAME }}` syntax | `deploy.yml` |
 | Pinning action versions (`@v1.0.3`) | `deploy.yml` |
 | Deployment logs in Actions tab | GitHub UI |
+| EC2 public IPs are ephemeral | Troubleshooting |
+| Elastic IP — permanent static IP | Post-setup note |
+| zsh `%` — not part of file content | Troubleshooting |
+
