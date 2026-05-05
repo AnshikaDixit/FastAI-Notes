@@ -7,7 +7,7 @@ from models.user_orm import UserORM
 from services import auth_service
 from database import get_db
 from models.response_schema import APIResponse
-from utils.messages import SuccessMessages
+from utils.messages import SuccessMessages, ErrorMessages
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
