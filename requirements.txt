@@ -3,3 +3,6 @@ fastapi                  # the web framework
 uvicorn[standard]        # the server that runs FastAPI (like Apache/nginx, but lightweight)
 sqlalchemy               # the orm - lets you talk to the database using Python objects
 pydantic                 # the schema - validates and serializes data shapes
+pyjwt                    # JSON Web Token library
+bcrypt                    # password hashing library (direct usage)
+python-dotenv            # load env vars from .env file

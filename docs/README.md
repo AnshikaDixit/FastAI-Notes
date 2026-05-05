@@ -17,6 +17,7 @@ A new developer should be able to read these docs from top to bottom and fully u
 | [day-01.md](./day-01.md) | Project setup, FastAPI basics, in-memory CRUD → SQLite + SQLAlchemy migration, full project architecture |
 | [day-02.md](./day-02.md) | Dockerization, Nginx reverse proxy, AWS EC2 deployment, data persistence with Docker volumes |
 | [day-03.md](./day-03.md) | CI/CD with GitHub Actions — auto-deploy to EC2 on every git push |
+| [day-04.md](./day-04.md) | 🔐 JWT Authentication, Response Standardization, and Centralized Constants |
 | [deployment-guide.md](./deployment-guide.md) | ⭐ Reusable step-by-step deployment reference — use this for any future project |
 
 ---
@@ -31,17 +32,26 @@ my-fastapi-app/
 │
 ├── models/
 │   ├── note.py                ← Pydantic schemas (request/response shapes)
-│   └── note_orm.py            ← SQLAlchemy ORM model (DB table structure)
+│   ├── note_orm.py            ← SQLAlchemy ORM model (DB table structure)
+│   ├── user.py                ← User schemas & Auth models
+│   ├── user_orm.py            ← User DB table structure
+│   └── response_schema.py     ← Generic APIResponse wrapper
 │
 ├── routers/
-│   └── notes.py               ← API endpoints (thin layer, delegates to service)
+│   ├── notes.py               ← CRUD endpoints (with standardized responses)
+│   └── auth.py                ← Signup & Login endpoints
 │
 ├── services/
-│   └── note_service.py        ← All DB CRUD logic lives here
+│   ├── note_service.py        ← DB logic for notes
+│   └── auth_service.py        ← Password hashing & JWT logic
+│
+├── utils/
+│   └── messages.py            ← Centralized Success & Error strings
 │
 ├── database.py                ← SQLAlchemy engine, session factory, get_db()
-├── main.py                    ← App entry point, table auto-creation, route registration
+├── main.py                    ← App entry point, table auto-creation, route registration, global exception handlers
 ├── requirements.txt           ← Python dependencies
+├── .env                       ← Environment variables (Secrets)
 └── .gitignore                 ← Files excluded from version control
 ```
 

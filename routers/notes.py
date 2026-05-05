@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models.note import NoteCreate, NoteUpdate, NoteResponse
 import services.note_service as note_service
+from models.response_schema import APIResponse
+from utils.messages import SuccessMessages
 
 router = APIRouter(
     prefix="/notes",   # all routes here auto get /notes prefix
@@ -12,34 +14,48 @@ router = APIRouter(
 )
 
 
-@router.post("/", status_code=201, response_model=NoteResponse)
+@router.post("/", status_code=201, response_model=APIResponse[NoteResponse])
 def create_note(note: NoteCreate, db: Session = Depends(get_db)):
     """Create a new note and persist it to the database."""
     # note: NoteCreate -> The client must send a JSON body that matches the NoteCreate shape, Pydantic automatically reads the request body, validates it, and hands us a NoteCreate object. If the body is wrong, it rejects the request with 422 before code even runs.
     # db: Session -> Session is the type hint — it tells us that db is a SQLAlchemy database session object. This is just for autocomplete and readability.
     # Depends(get_db) -> The magic part -> This is Dependency Injection. Instead of manually calling get_db() inside every route, we say "FastAPI, please call get_db() for me and inject the result as db."
-    return note_service.create_note(db, note)
+    db_note = note_service.create_note(db, note)
+    return APIResponse(
+        status_code=201,
+        message=SuccessMessages.NOTE_CREATED,
+        data=NoteResponse.model_validate(db_note)
+    )
 
 
-@router.get("/", response_model=list[NoteResponse])
+@router.get("/", response_model=APIResponse[list[NoteResponse]])
 def list_notes(db: Session = Depends(get_db)):
     """Retrieve all notes, ordered by most recently created."""
-    return note_service.get_all_notes(db)
+    notes = note_service.get_all_notes(db)
+    return APIResponse(
+        status_code=200,
+        message=SuccessMessages.NOTES_RETRIEVED,
+        data=[NoteResponse.model_validate(n) for n in notes]
+    )
 
 
-@router.get("/{note_id}", response_model=NoteResponse)
+@router.get("/{note_id}", response_model=APIResponse[NoteResponse])
 def get_note(note_id: int, db: Session = Depends(get_db)):
     """Retrieve a single note by its ID."""
     # note_id: int -> This is a path parameter. FastAPI extracts '1', '2', etc., from the URL and passes them as integers.
     note = note_service.get_note_by_id(db, note_id)
     if not note:
-        raise HTTPException(status_code=404, detail="Note not found")
-    # if not note -> If the service couldn't find a note with that ID, it returns None.
-    # raise HTTPException -> We raise an HTTPException with a 404 status code and a JSON body.
-    return note
+        # if not note -> If the service couldn't find a note with that ID, it returns None.
+        # raise HTTPException -> We raise an HTTPException with a 404 status code and a JSON body.
+        raise HTTPException(status_code=404, detail=ErrorMessages.NOTE_NOT_FOUND)
+    return APIResponse(
+        status_code=200,
+        message=SuccessMessages.NOTE_RETRIEVED,
+        data=NoteResponse.model_validate(note)
+    )
 
 
-@router.put("/{note_id}", response_model=NoteResponse)
+@router.put("/{note_id}", response_model=APIResponse[NoteResponse])
 def update_note(note_id: int, updated: NoteUpdate, db: Session = Depends(get_db)):
     """Partially update a note. Only provided fields are changed."""
     # note_id: int -> This is a path parameter. FastAPI extracts '1', '2', etc., from the URL and passes them as integers.
@@ -47,15 +63,23 @@ def update_note(note_id: int, updated: NoteUpdate, db: Session = Depends(get_db)
     note = note_service.update_note(db, note_id, updated)
     # note = note_service.update_note(db, note_id, updated) -> We call our service function.
     if not note:
-        raise HTTPException(status_code=404, detail="Note not found")
-    return note
+        raise HTTPException(status_code=404, detail=ErrorMessages.NOTE_NOT_FOUND)
+    return APIResponse(
+        status_code=200,
+        message=SuccessMessages.NOTE_UPDATED,
+        data=NoteResponse.model_validate(note)
+    )
 
 
-@router.delete("/{note_id}")
+@router.delete("/{note_id}", response_model=APIResponse[None])
 def delete_note(note_id: int, db: Session = Depends(get_db)):
     """Delete a note by ID."""
     note = note_service.delete_note(db, note_id)
     # note = note_service.delete_note(db, note_id) -> We call our service function.
     if not note:
-        raise HTTPException(status_code=404, detail="Note not found")
-    return {"message": "Note deleted", "id": note_id}   
+        raise HTTPException(status_code=404, detail=ErrorMessages.NOTE_NOT_FOUND)
+    return APIResponse(
+        status_code=200,
+        message=SuccessMessages.NOTE_DELETED,
+        data=None
+    )
