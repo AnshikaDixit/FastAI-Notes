@@ -9,6 +9,11 @@ class UserCreate(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+class UserLogin(BaseModel):
+    """Schema for user login."""
+    email: EmailStr
+    password: str
+
 class UserResponse(BaseModel):
     """Schema returned after user creation (no password)."""
     id: int

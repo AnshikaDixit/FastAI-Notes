@@ -11,6 +11,7 @@
 Now that we have a login system, the next goal was to make the API **private**. We set out to:
 - Protect all "Notes" endpoints so only logged-in users can access them.
 - Implement **Data Ownership**: Users should only see their *own* notes, not everyone's.
+- **Refactor Login Experience**: Moved from Form-based login to JSON-based login for a cleaner UI.
 - Improve the developer experience for testing authenticated routes in Swagger UI.
 - Fix security warnings regarding JWT key strength.
 
@@ -23,17 +24,20 @@ Now that we have a login system, the next goal was to make the API **private**. 
 3.  **Database Schema Update**: Linked the `notes` table to the `users` table via a Foreign Key.
 4.  **Authenticated CRUD**: Refactored the entire Notes service to filter by the logged-in user's ID.
 5.  **Auth Debug Endpoint**: Added `/auth/me` to quickly verify "Who am I?" via a token.
+6.  **Clean Login API**: Replaced `OAuth2PasswordRequestForm` with a custom `UserLogin` model to remove unnecessary Swagger fields.
 
 ---
 
-## 📦 Feature 1 — Multi-Scheme Authentication
+## 📦 Feature 1 — Multi-Scheme Authentication & Clean UI
 
-We discovered that using only `OAuth2PasswordBearer` was difficult because our standardized "Wrapped" response format confused Swagger UI's automatic login.
+We discovered that using the standard `OAuth2PasswordBearer` and `OAuth2PasswordRequestForm` was creating a cluttered experience:
+- It forced a login form with extra fields like `grant_type`, `scope`, and `client_id`.
+- It required "Form Data" instead of the industry-preferred "JSON Body."
 
-### 🔐 The Solution: `HTTPBearer`
-We added `HTTPBearer` to `services/auth_service.py`. 
-- **Benefit**: It provides a simple "Paste Token" box in Swagger. 
-- **Why?**: Since we manually get the token from `/auth/login`, we just need a place to paste it without Swagger trying to do a background login.
+### 🔐 The Solution: `HTTPBearer` + `UserLogin`
+1.  **Switched to `HTTPBearer`**: This provides a simple "Paste Token" box in Swagger. 
+2.  **JSON Login**: We created a `UserLogin` Pydantic model. Now, the login endpoint expects a clean JSON: `{"email": "...", "password": "..."}`.
+3.  **Security**: This is **completely safe** and is actually the standard for modern frontend applications (React, Flutter). Since we use HTTPS in production, the data is encrypted regardless of whether it's a Form or JSON.
 
 ---
 
