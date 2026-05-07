@@ -18,6 +18,7 @@ A new developer should be able to read these docs from top to bottom and fully u
 | [day-02.md](./day-02.md) | Dockerization, Nginx reverse proxy, AWS EC2 deployment, data persistence with Docker volumes |
 | [day-03.md](./day-03.md) | CI/CD with GitHub Actions — auto-deploy to EC2 on every git push |
 | [day-04.md](./day-04.md) | 🔐 JWT Authentication, Response Standardization, and Centralized Constants |
+| [day-05.md](./day-05.md) | 🛡️ Protected Routes, Data Ownership, and Security Hardening |
 | [deployment-guide.md](./deployment-guide.md) | ⭐ Reusable step-by-step deployment reference — use this for any future project |
 
 ---
@@ -71,3 +72,6 @@ my-fastapi-app/
 | Dependency Injection | `Depends(get_db)` — FastAPI auto-creates a DB session per request |
 | Router | Groups related endpoints under a common URL prefix |
 | Service Layer | Where business logic lives — keeps routers thin and testable |
+| HTTPBearer | Security scheme that adds a simple "Paste Token" box in Swagger UI |
+| Data Ownership | Concept where database records (notes) are linked to a specific user |
+| Protected Route | Endpoint that requires a valid JWT token to access |

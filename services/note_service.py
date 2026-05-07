@@ -6,28 +6,28 @@ from models.note_orm import NoteORM
 from models.note import NoteCreate, NoteUpdate
 
 
-def create_note(db: Session, note_data: NoteCreate) -> NoteORM: # note_data is the incoming data from the client, The -> is a Python return type hint. It's telling us what type of value this function will return, returns a NoteORM object
+def create_note(db: Session, note_data: NoteCreate, user_id: int) -> NoteORM: 
     """Insert a new note into the database and return the created ORM object."""
-    db_note = NoteORM(**note_data.model_dump()) #This is the core ORM magic: it unpacks the NoteCreate object and uses those values to instantiate a brand new NoteORM model instance.
+    db_note = NoteORM(**note_data.model_dump(), user_id=user_id) 
     db.add(db_note)
     db.commit()
-    db.refresh(db_note)  # reload to get DB-generated fields (id, created_at, updated_at)
-    return db_note # ← this will be a NoteORM
+    db.refresh(db_note)
+    return db_note
 
 
-def get_all_notes(db: Session) -> list[NoteORM]:
-    """Return all notes ordered by most recently created."""
-    return db.query(NoteORM).order_by(NoteORM.created_at.desc()).all()
+def get_all_notes(db: Session, user_id: int) -> list[NoteORM]:
+    """Return all notes for a specific user, ordered by most recently created."""
+    return db.query(NoteORM).filter(NoteORM.user_id == user_id).order_by(NoteORM.created_at.desc()).all()
 
 
-def get_note_by_id(db: Session, note_id: int) -> NoteORM | None:
-    """Return a single note by ID, or None if not found."""
-    return db.query(NoteORM).filter(NoteORM.id == note_id).first()
+def get_note_by_id(db: Session, note_id: int, user_id: int) -> NoteORM | None:
+    """Return a single note by ID for a specific user, or None if not found."""
+    return db.query(NoteORM).filter(NoteORM.id == note_id, NoteORM.user_id == user_id).first()
 
 
-def update_note(db: Session, note_id: int, update_data: NoteUpdate) -> NoteORM | None:
-    """Partially update a note. Only fields explicitly sent by the client are changed."""
-    db_note = get_note_by_id(db, note_id)
+def update_note(db: Session, note_id: int, update_data: NoteUpdate, user_id: int) -> NoteORM | None:
+    """Partially update a note for a specific user."""
+    db_note = get_note_by_id(db, note_id, user_id)
     if not db_note:
         return None
 
@@ -40,9 +40,9 @@ def update_note(db: Session, note_id: int, update_data: NoteUpdate) -> NoteORM |
     return db_note
 
 
-def delete_note(db: Session, note_id: int) -> NoteORM | None:
-    """Delete a note by ID. Returns the deleted object, or None if not found."""
-    db_note = get_note_by_id(db, note_id)
+def delete_note(db: Session, note_id: int, user_id: int) -> NoteORM | None:
+    """Delete a note by ID for a specific user."""
+    db_note = get_note_by_id(db, note_id, user_id)
     if not db_note:
         return None
 

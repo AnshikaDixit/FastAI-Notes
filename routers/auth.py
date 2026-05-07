@@ -40,3 +40,12 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         message=SuccessMessages.LOGIN_SUCCESS,
         data=Token(access_token=access_token, refresh_token=refresh_token)
     )
+    
+@router.get("/me", response_model=APIResponse[UserResponse])
+def get_me(current_user: UserORM = Depends(auth_service.get_current_user)):
+    """Retrieve the current logged-in user's profile."""
+    return APIResponse(
+        status_code=200,
+        message="User profile retrieved",
+        data=UserResponse.model_validate(current_user)
+    )

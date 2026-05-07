@@ -23,3 +23,6 @@ class ErrorMessages:
     
     # Global errors
     VALIDATION_ERROR = "Validation error"
+    AUTH_FAILED = "Could not validate credentials"
+    TOKEN_EXPIRED = "Token has expired"
+    INACTIVE_USER = "Inactive user"
