@@ -20,6 +20,7 @@ A new developer should be able to read these docs from top to bottom and fully u
 | [day-04.md](./day-04.md) | 🔐 JWT Authentication, Response Standardization, and Centralized Constants |
 | [day-05.md](./day-05.md) | 🛡️ Protected Routes, Data Ownership, and Security Hardening |
 | [day-06.md](./day-06.md) | 🚀 Background Tasks (Fire-and-Forget), Note Export, Activity Logging |
+| [day-07.md](./day-07.md) | 📡 StreamingResponse & Server-Sent Events (SSE), Streamed Export |
 | [deployment-guide.md](./deployment-guide.md) | ⭐ Reusable step-by-step deployment reference — use this for any future project |
 
 ---
@@ -36,6 +37,7 @@ my-fastapi-app/
 │   ├── day-04.md              ← Day 4 — JWT Authentication
 │   ├── day-05.md              ← Day 5 — Protected Routes & Data Ownership
 │   ├── day-06.md              ← Day 6 — Background Tasks & Note Export
+│   ├── day-07.md              ← Day 7 — StreamingResponse & SSE
 │   └── deployment-guide.md    ← Reusable deployment reference
 │
 ├── models/
@@ -50,12 +52,14 @@ my-fastapi-app/
 ├── routers/
 │   ├── notes.py               ← CRUD endpoints (with standardized responses)
 │   ├── auth.py                ← Signup & Login endpoints
-│   └── export.py              ← Note export & history (BackgroundTasks)
+│   ├── export.py              ← Note export & history (BackgroundTasks)
+│   └── stream.py              ← SSE streaming export (StreamingResponse)
 │
 ├── services/
 │   ├── note_service.py        ← DB logic for notes
 │   ├── auth_service.py        ← Password hashing & JWT logic
-│   └── export_service.py      ← Background task: fetch notes → generate Markdown
+│   ├── export_service.py      ← Background task: fetch notes → generate Markdown
+│   └── stream_service.py      ← Async SSE generator + event formatter
 │
 ├── utils/
 │   └── messages.py            ← Centralized Success & Error strings
@@ -91,3 +95,7 @@ my-fastapi-app/
 | Fire-and-Forget | Pattern where the server accepts a request, responds instantly, and processes later |
 | HTTP 202 Accepted | Status code meaning "request received, processing hasn't completed yet" |
 | Activity Log | Audit trail table that tracks background job status (pending → completed / failed) |
+| StreamingResponse | Sends data chunk-by-chunk via a generator instead of building the full response in memory |
+| SSE (Server-Sent Events) | HTTP-based protocol for real-time server → client push (Content-Type: text/event-stream) |
+| Async Generator | `async def` + `yield` — produces values one at a time without blocking the event loop |
+| `X-Accel-Buffering: no` | Header that disables Nginx response buffering — critical for SSE to work behind a proxy |
