@@ -10,6 +10,10 @@ class SuccessMessages:
     NOTE_UPDATED = "Note updated successfully"
     NOTE_DELETED = "Note deleted successfully"
     
+    # Export messages
+    EXPORT_STARTED = "Export job started — processing in the background"
+    EXPORT_HISTORY_RETRIEVED = "Export history retrieved successfully"
+
     # General messages
     ROOT_MESSAGE = "Notes API is running!"
 

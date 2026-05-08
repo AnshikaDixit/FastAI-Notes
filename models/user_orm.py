@@ -13,5 +13,6 @@ class UserORM(Base):
     hashed_password = Column(String, nullable=False)
     full_name = Column(String, nullable=True)
     notes = relationship("NoteORM", back_populates="owner", cascade="all, delete-orphan")
+    activity_logs = relationship("ActivityLogORM", back_populates="owner", cascade="all, delete-orphan")
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)

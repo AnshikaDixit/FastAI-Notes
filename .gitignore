@@ -30,3 +30,6 @@ env/
 # Env vars / secrets
 .env
 .env.*
+
+# Generated exports (background tasks)
+exports/
