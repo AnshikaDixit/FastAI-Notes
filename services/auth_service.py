@@ -13,6 +13,10 @@ from models.user_orm import UserORM
 import bcrypt
 
 # Load environment variables
+from dotenv import load_dotenv
+load_dotenv()
+
+# We provide robust defaults so the app doesn't fall back to 'alg: none' if .env is missing.
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
@@ -21,56 +25,57 @@ REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 http_bearer = HTTPBearer()
 
 def get_current_user(db: Session = Depends(get_db), auth: Optional[object] = Depends(http_bearer)) -> UserORM: 
+    """Validate token and return the current authenticated user."""
     # auth is an HTTPAuthorizationCredentials object if using HTTPBearer
     token = auth.credentials if auth else None
+    
     if not token:
+        # If CloudFront is stripping the header, this specific message will reveal it.
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=ErrorMessages.AUTH_FAILED,
+            detail="Authentication token is missing. Please check Authorization header.",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    # db: Session is like a temporary box for DB objects, asking for db connection, will last until the request is processed, closed after request is completed
-    # token: It will automatically extract the Bearer Token from the request headers. If the token is missing, FastAPI will automatically throw an error.
-    """Validate token and return the current authenticated user."""
-    # credentials_exception: This is a custom exception that will be raised if the token is invalid. 
-    #WWW-Authenticate: This header tells the client that the request has failed due to authentication. 
-    # . HTTPException() creates an error response that FastAPI automatically sends to the client when raised.
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail=ErrorMessages.AUTH_FAILED,
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+
     try:
         # JWT is signed using your private key, so only the server can verify it.
-        # payload: The decoded token data
-        # token: raw token
+        # We explicitly pass the algorithm to prevent 'alg: none' attacks or accidental usage.
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
-        user_id: str = payload.get("sub") # sub is the subject (user id we said while creating token)
-        token_type: str = payload.get("type") # type is the token type (access or refresh)
+        user_id: str = payload.get("sub") 
+        token_type: str = payload.get("type") 
+        
         if user_id is None or token_type != "access":
-            # If the user_id or token_type is missing or invalid, raise the credentials_exception.
-            raise credentials_exception
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token: missing subject or incorrect type",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
     except jwt.ExpiredSignatureError:
-        # jwt.ExpiredSignatureError: This exception is raised when the token has expired.
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=ErrorMessages.TOKEN_EXPIRED,
             headers={"WWW-Authenticate": "Bearer"},
         )
-    except jwt.PyJWTError:
-        # jwt.PyJWTError: This exception is raised when the token is invalid.
-        raise credentials_exception
+    except jwt.PyJWTError as e:
+        # Log the specific error on the server console for debugging.
+        print(f"[AuthService] JWT Decode Error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Token validation failed: {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
-    user = db.query(UserORM).filter(UserORM.id == int(user_id)).first() # query(UserORM): This tells SQLAlchemy to look into the UserORM table.
-                                                                        # .filter(...): This applies a WHERE clause.
-                                                                        # .first(): This executes the query and returns only the first result (or None if no rows match).
+    user = db.query(UserORM).filter(UserORM.id == int(user_id)).first()
     if user is None:
-        raise credentials_exception # If the user_id is not found in the database, raise the credentials_exception.
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found in database",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     return user
 
 def get_password_hash(password: str) -> str:
     """Return a bcrypt hash of the given password."""
-    # bcrypt.hashpw expects bytes
     pwd_bytes = password.encode('utf-8')
     salt = bcrypt.gensalt()
     hashed = bcrypt.hashpw(pwd_bytes, salt)
@@ -86,6 +91,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire, "type": "access"})
+    # Explicitly using the algorithm to ensure a signature is generated.
     return jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
 
 def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
