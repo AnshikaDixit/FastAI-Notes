@@ -6,3 +6,4 @@ pydantic                 # the schema - validates and serializes data shapes
 pyjwt                    # JSON Web Token library
 bcrypt                    # password hashing library (direct usage)
 python-dotenv            # load env vars from .env file
+alembic                  # the migration tool
