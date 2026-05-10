@@ -7,6 +7,8 @@ services:
       - "8000"                    # only expose internally to other containers, NOT to the internet
     volumes:
       - notes_data:/app/data      # persist notes.db outside the container
+    env_file:                    
+      - .env                     
     environment:
       - DATABASE_URL=sqlite:////app/data/notes.db   # 4 slashes = absolute path in SQLite URL
     restart: always               # auto-restart if the container crashes
