@@ -16,9 +16,10 @@ import bcrypt
 from dotenv import load_dotenv
 load_dotenv()
 
-# We provide robust defaults so the app doesn't fall back to 'alg: none' if .env is missing.
+# Variables are read from the .env file on EC2. 
+# If they are missing, the app will now fail with a clear error rather than creating insecure tokens.
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
-JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
+JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 
@@ -26,20 +27,23 @@ http_bearer = HTTPBearer()
 
 def get_current_user(db: Session = Depends(get_db), auth: Optional[object] = Depends(http_bearer)) -> UserORM: 
     """Validate token and return the current authenticated user."""
-    # auth is an HTTPAuthorizationCredentials object if using HTTPBearer
     token = auth.credentials if auth else None
     
     if not token:
-        # If CloudFront is stripping the header, this specific message will reveal it.
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication token is missing. Please check Authorization header.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    if not JWT_SECRET_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Server configuration error: JWT_SECRET_KEY is missing.",
+        )
+
     try:
-        # JWT is signed using your private key, so only the server can verify it.
-        # We explicitly pass the algorithm to prevent 'alg: none' attacks or accidental usage.
+        # Explicitly passing the algorithm list is a security best practice.
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         user_id: str = payload.get("sub") 
         token_type: str = payload.get("type") 
@@ -57,7 +61,6 @@ def get_current_user(db: Session = Depends(get_db), auth: Optional[object] = Dep
             headers={"WWW-Authenticate": "Bearer"},
         )
     except jwt.PyJWTError as e:
-        # Log the specific error on the server console for debugging.
         print(f"[AuthService] JWT Decode Error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -88,13 +91,16 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(pwd_bytes, hashed_bytes)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    if not JWT_SECRET_KEY:
+        raise ValueError("JWT_SECRET_KEY is not set in environment variables.")
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire, "type": "access"})
-    # Explicitly using the algorithm to ensure a signature is generated.
     return jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
 
 def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    if not JWT_SECRET_KEY:
+        raise ValueError("JWT_SECRET_KEY is not set in environment variables.")
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + (expires_delta or timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS))
     to_encode.update({"exp": expire, "type": "refresh"})
