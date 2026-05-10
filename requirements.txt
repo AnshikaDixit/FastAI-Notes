@@ -4,6 +4,7 @@ uvicorn[standard]        # the server that runs FastAPI (like Apache/nginx, but 
 sqlalchemy               # the orm - lets you talk to the database using Python objects
 pydantic                 # the schema - validates and serializes data shapes
 pyjwt                    # JSON Web Token library
-bcrypt                    # password hashing library (direct usage)
+bcrypt                   # password hashing library (direct usage)
 python-dotenv            # load env vars from .env file
-alembic                  # the migration tool
+email-validator          # email validation regex
+alembic                  # the migration tool for server db
