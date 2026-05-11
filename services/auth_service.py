@@ -17,7 +17,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Variables are read from the .env file on EC2. 
-# If they are missing, the app will now fail with a clear error rather than creating insecure tokens.
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
@@ -43,7 +42,6 @@ def get_current_user(db: Session = Depends(get_db), auth: Optional[object] = Dep
         )
 
     try:
-        # Explicitly passing the algorithm list is a security best practice.
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         user_id: str = payload.get("sub") 
         token_type: str = payload.get("type") 
@@ -89,6 +87,20 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     pwd_bytes = plain_password.encode('utf-8')
     hashed_bytes = hashed_password.encode('utf-8')
     return bcrypt.checkpw(pwd_bytes, hashed_bytes)
+
+# --- PIN Handling ---
+def set_user_pin(db: Session, user: UserORM, pin: str):
+    """Hash and store the user's PIN."""
+    user.hashed_pin = get_password_hash(pin)
+    db.commit()
+    db.refresh(user)
+
+def verify_user_pin(user: UserORM, pin: str) -> bool:
+    """Verify the user's PIN."""
+    if not user.hashed_pin:
+        return False
+    return verify_password(pin, user.hashed_pin)
+# --------------------
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     if not JWT_SECRET_KEY:

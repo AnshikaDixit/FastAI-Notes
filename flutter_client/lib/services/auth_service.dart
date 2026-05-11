@@ -1,6 +1,5 @@
 // services/auth_service.dart
-// Authentication API calls — signup, login, getMe.
-// Every method returns Result<T>: Success or Failure(ApiException).
+// Authentication API calls — signup, login, getMe, PIN management.
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -64,10 +63,7 @@ class AuthService {
     }
   }
 
-  /// Fetch the current user's profile (requires token in headers).
   /// Fetch the current user's profile.
-  /// CloudFront is configured to forward the Authorization header via
-  /// the ForwardAuthorizationHeader origin request policy.
   Future<Result<UserResponse>> getMe() async {
     try {
       final response = await _dio.get('/auth/me');
@@ -84,6 +80,80 @@ class AuthService {
     }
   }
 
+  // --- PIN Management ---
+
+  /// Set the initial PIN.
+  Future<Result<UserResponse>> setPin(String pin) async {
+    try {
+      final response = await _dio.post('/auth/pin/set', data: {'pin': pin});
+      final apiResponse = ApiResponse.fromJson(
+        response.data as Map<String, dynamic>,
+        (json) => UserResponse.fromJson(json as Map<String, dynamic>),
+      );
+      return Success(apiResponse.data!);
+    } on DioException catch (e) {
+      return Failure(_extractException(e));
+    } catch (e) {
+      return Failure(ApiException.unknown());
+    }
+  }
+
+  /// Verify if the provided PIN is correct.
+  Future<Result<bool>> verifyPin(String pin) async {
+    try {
+      final response = await _dio.post('/auth/pin/verify', data: {'pin': pin});
+      final apiResponse = ApiResponse.fromJson(
+        response.data as Map<String, dynamic>,
+        (json) => json as bool,
+      );
+      return Success(apiResponse.data ?? false);
+    } on DioException catch (e) {
+      return Failure(_extractException(e));
+    } catch (e) {
+      return Failure(ApiException.unknown());
+    }
+  }
+
+  /// Change existing PIN.
+  Future<Result<UserResponse>> resetPin(String newPin, {String? oldPin}) async {
+    try {
+      final response = await _dio.post('/auth/pin/reset', data: {
+        'old_pin': oldPin,
+        'new_pin': newPin,
+      });
+      final apiResponse = ApiResponse.fromJson(
+        response.data as Map<String, dynamic>,
+        (json) => UserResponse.fromJson(json as Map<String, dynamic>),
+      );
+      return Success(apiResponse.data!);
+    } on DioException catch (e) {
+      return Failure(_extractException(e));
+    } catch (e) {
+      return Failure(ApiException.unknown());
+    }
+  }
+
+  /// Reset PIN by providing login credentials.
+  Future<Result<UserResponse>> forgotPin(String email, String password) async {
+    try {
+      final response = await _dio.post('/auth/pin/forgot', data: {
+        'email': email,
+        'password': password,
+      });
+      final apiResponse = ApiResponse.fromJson(
+        response.data as Map<String, dynamic>,
+        (json) => UserResponse.fromJson(json as Map<String, dynamic>),
+      );
+      return Success(apiResponse.data!);
+    } on DioException catch (e) {
+      return Failure(_extractException(e));
+    } catch (e) {
+      return Failure(ApiException.unknown());
+    }
+  }
+
+  // -------------------------------------------------------------------------
+
   /// Clear stored tokens and user email on logout.
   Future<void> clearTokens() async {
     final prefs = await SharedPreferences.getInstance();
@@ -92,7 +162,7 @@ class AuthService {
     await prefs.remove(AppConfig.kUserEmail);
   }
 
-// -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
   // Private helpers
   // -------------------------------------------------------------------------
 

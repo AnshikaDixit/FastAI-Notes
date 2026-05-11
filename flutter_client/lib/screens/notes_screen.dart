@@ -5,7 +5,6 @@
 import 'package:fastai_notes_client/core/result.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../models/note.dart';
 import '../providers/auth_provider.dart';
 import '../providers/note_provider.dart';
@@ -103,12 +102,22 @@ class _NotesScreenState extends State<NotesScreen> {
   }
 
   Future<bool?> _showPinDialog() async {
+    final auth = context.read<AuthProvider>();
+    if (auth.currentUser == null) return false;
+
+    // If user hasn't set a PIN, prompt to set one first
+    if (!auth.currentUser!.hasPin) {
+      final set = await _showSetPinDialog();
+      return set;
+    }
+
     String pin = '';
     return showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.bgCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
             const Icon(Icons.lock_outline, color: AppColors.accent),
@@ -119,53 +128,143 @@ class _NotesScreenState extends State<NotesScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('This is a personal note. Enter your PIN to view.',
-                style: AppTextStyles.bodySmall),
-            const SizedBox(height: 16),
+            Text('Enter your 4-digit security PIN.', style: AppTextStyles.bodySmall),
+            const SizedBox(height: 20),
             TextField(
               obscureText: true,
               autofocus: true,
               keyboardType: TextInputType.number,
               maxLength: 4,
-              style: AppTextStyles.headingLarge.copyWith(letterSpacing: 8),
+              style: AppTextStyles.headingLarge.copyWith(letterSpacing: 12),
               textAlign: TextAlign.center,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 counterText: '',
-                hintText: '****',
+                hintText: '••••',
+                filled: true,
+                fillColor: AppColors.bgDark,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
               ),
               onChanged: (val) => pin = val,
-              onSubmitted: (val) {
-                if (val == '1234') {
-                  Navigator.of(ctx).pop(true);
-                } else {
-                   _showSnackbar('Incorrect PIN', AppColors.error);
-                   Navigator.of(ctx).pop(false);
-                }
+              onSubmitted: (val) async {
+                 final isValid = await auth.verifyPin(val);
+                 if (isValid) {
+                    Navigator.of(ctx).pop(true);
+                 } else {
+                    _showSnackbar('Incorrect PIN', AppColors.error);
+                    Navigator.of(ctx).pop(false);
+                 }
               },
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => _showForgotPinDialog(),
+              child: Text('Forgot PIN?', style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary)),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text('Cancel',
-                style: AppTextStyles.labelMedium.copyWith(color: AppColors.textSecondary)),
+            child: Text('Cancel', style: AppTextStyles.labelMedium.copyWith(color: AppColors.textSecondary)),
           ),
           TextButton(
-            onPressed: () {
-              if (pin == '1234') {
+            onPressed: () async {
+              final isValid = await auth.verifyPin(pin);
+              if (isValid) {
                 Navigator.of(ctx).pop(true);
               } else {
                 _showSnackbar('Incorrect PIN', AppColors.error);
                 Navigator.of(ctx).pop(false);
               }
             },
-            child: Text('Unlock',
-                style: AppTextStyles.labelMedium.copyWith(color: AppColors.accent)),
+            child: Text('Unlock', style: AppTextStyles.labelMedium.copyWith(color: AppColors.accent)),
           ),
         ],
       ),
     );
+  }
+
+  Future<bool?> _showSetPinDialog() async {
+    String pin = '';
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.bgCard,
+        title: Text('Set Security PIN', style: AppTextStyles.headingMedium),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Protect your personal notes with a 4-digit PIN.', style: AppTextStyles.bodySmall),
+            const SizedBox(height: 16),
+            TextField(
+              obscureText: true,
+              keyboardType: TextInputType.number,
+              maxLength: 4,
+              textAlign: TextAlign.center,
+              decoration: const InputDecoration(hintText: 'New PIN'),
+              onChanged: (val) => pin = val,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Later')),
+          TextButton(
+            onPressed: () async {
+              if (pin.length != 4) {
+                _showSnackbar('PIN must be 4 digits', AppColors.error);
+                return;
+              }
+              final success = await context.read<AuthProvider>().setPin(pin);
+              if (success) {
+                _showSnackbar('PIN set successfully', AppColors.success);
+                Navigator.of(ctx).pop(true);
+              }
+            },
+            child: const Text('Set PIN', style: TextStyle(color: AppColors.accent)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showForgotPinDialog() async {
+     // For simplicity, we'll just show a message or a small form
+     final emailCtrl = TextEditingController();
+     final passCtrl = TextEditingController();
+
+     showDialog(
+       context: context,
+       builder: (ctx) => AlertDialog(
+         backgroundColor: AppColors.bgCard,
+         title: const Text('Forgot PIN'),
+         content: Column(
+           mainAxisSize: MainAxisSize.min,
+           children: [
+            Text('Enter your account password to reset your PIN.', style: AppTextStyles.bodySmall),
+             const SizedBox(height: 16),
+             TextField(controller: emailCtrl, decoration: const InputDecoration(hintText: 'Email')),
+             const SizedBox(height: 8),
+             TextField(controller: passCtrl, obscureText: true, decoration: const InputDecoration(hintText: 'Password')),
+           ],
+         ),
+         actions: [
+           TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
+           TextButton(
+             onPressed: () async {
+               final success = await context.read<AuthProvider>().forgotPin(emailCtrl.text, passCtrl.text);
+               if (success) {
+                 _showSnackbar('PIN reset! Please set a new one.', AppColors.success);
+                 Navigator.of(ctx).pop();
+                 _showSetPinDialog();
+               } else {
+                 _showSnackbar('Verification failed', AppColors.error);
+               }
+             },
+             child: const Text('Reset', style: TextStyle(color: AppColors.error)),
+           ),
+         ],
+       ),
+     );
   }
 
   void _showSnackbar(String message, Color color, {SnackBarAction? action}) {
@@ -232,6 +331,12 @@ class _NotesScreenState extends State<NotesScreen> {
           icon: const Icon(Icons.stream_rounded, color: AppColors.accent),
           tooltip: AppStrings.streamExport,
         ),
+        // Security Settings
+        IconButton(
+          onPressed: () => _showSecuritySettings(),
+          icon: const Icon(Icons.security_rounded, color: AppColors.textSecondary),
+          tooltip: 'Security Settings',
+        ),
         // Logout
         IconButton(
           onPressed: _logout,
@@ -297,6 +402,79 @@ class _NotesScreenState extends State<NotesScreen> {
           },
           onDelete: () => _deleteNote(noteProvider.notes[i]),
         ),
+      ),
+    );
+  }
+
+  void _showSecuritySettings() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.bgCard,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Security Settings', style: AppTextStyles.headingMedium),
+              const SizedBox(height: 24),
+              ListTile(
+                leading: const Icon(Icons.lock_reset_rounded, color: AppColors.primary),
+                title: const Text('Change Security PIN'),
+                subtitle: const Text('Update your 4-digit access code'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showChangePinDialog();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.help_outline_rounded, color: AppColors.textSecondary),
+                title: const Text('Reset Forgotten PIN'),
+                subtitle: const Text('Requires your account password'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showForgotPinDialog();
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showChangePinDialog() async {
+    String oldPin = '';
+    String newPin = '';
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.bgCard,
+        title: const Text('Change PIN'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(obscureText: true, maxLength: 4, decoration: const InputDecoration(hintText: 'Old PIN'), onChanged: (v) => oldPin = v),
+            TextField(obscureText: true, maxLength: 4, decoration: const InputDecoration(hintText: 'New PIN'), onChanged: (v) => newPin = v),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () async {
+              final success = await context.read<AuthProvider>().resetPin(newPin, oldPin: oldPin);
+              if (success) {
+                _showSnackbar('PIN updated successfully', AppColors.success);
+                Navigator.of(ctx).pop();
+              } else {
+                _showSnackbar('Failed to update PIN', AppColors.error);
+              }
+            },
+            child: const Text('Change', style: TextStyle(color: AppColors.accent)),
+          ),
+        ],
       ),
     );
   }

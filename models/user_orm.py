@@ -11,8 +11,15 @@ class UserORM(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, nullable=False, index=True)
     hashed_password = Column(String, nullable=False)
+    hashed_pin = Column(String, nullable=True)
     full_name = Column(String, nullable=True)
+    
     notes = relationship("NoteORM", back_populates="owner", cascade="all, delete-orphan")
     activity_logs = relationship("ActivityLogORM", back_populates="owner", cascade="all, delete-orphan")
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    @property
+    def has_pin(self) -> bool:
+        return self.hashed_pin is not None

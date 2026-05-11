@@ -5,6 +5,7 @@ class UserResponse {
   final int id;
   final String email;
   final String? fullName;
+  final bool hasPin;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -12,6 +13,7 @@ class UserResponse {
     required this.id,
     required this.email,
     this.fullName,
+    this.hasPin = false,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -21,6 +23,7 @@ class UserResponse {
       id: json['id'] as int,
       email: json['email'] as String,
       fullName: json['full_name'] as String?,
+      hasPin: json['has_pin'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
