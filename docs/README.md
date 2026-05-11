@@ -21,6 +21,7 @@ A new developer should be able to read these docs from top to bottom and fully u
 | [day-05.md](./day-05.md) | 🛡️ Protected Routes, Data Ownership, and Security Hardening |
 | [day-06.md](./day-06.md) | 🚀 Background Tasks (Fire-and-Forget), Note Export, Activity Logging |
 | [day-07.md](./day-07.md) | 📡 StreamingResponse & Server-Sent Events (SSE), Streamed Export |
+| [day-08.md](./day-08.md) | 📱 Flutter Client — Dio + SSE streaming, Result<T> pattern, all API endpoints |
 | [deployment-guide.md](./deployment-guide.md) | ⭐ Reusable step-by-step deployment reference — use this for any future project |
 
 ---

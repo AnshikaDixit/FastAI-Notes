@@ -1,0 +1,36 @@
+name: fastai_notes_client
+description: "Flutter client for FastAI Notes — connects to FastAPI backend with SSE streaming."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.7
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # HTTP
+  dio: ^5.7.0                    # Primary HTTP client — REST calls + interceptors
+  http: ^1.2.0                   # Used ONLY for SSE streaming (Dio can't stream)
+
+  # State management
+  provider: ^6.1.2
+
+  # Persistence
+  shared_preferences: ^2.2.3     # Token storage
+
+  # UI
+  google_fonts: ^6.2.1           # Inter font — no font file download needed
+  flutter_markdown: ^0.7.3       # Render Markdown in SSE export screen
+  intl: ^0.19.0                  # Date formatting
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
