@@ -210,14 +210,13 @@ class _NotesScreenState extends State<NotesScreen> {
           TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Later')),
           TextButton(
             onPressed: () async {
-              if (pin.length != 4) {
-                _showSnackbar('PIN must be 4 digits', AppColors.error);
-                return;
-              }
-              final success = await context.read<AuthProvider>().setPin(pin);
+              final auth = context.read<AuthProvider>();
+              final success = await auth.setPin(pin);
               if (success) {
                 _showSnackbar('PIN set successfully', AppColors.success);
                 Navigator.of(ctx).pop(true);
+              } else {
+                _showSnackbar(auth.errorMessage ?? 'Failed to set PIN', AppColors.error);
               }
             },
             child: const Text('Set PIN', style: TextStyle(color: AppColors.accent)),
@@ -464,12 +463,13 @@ class _NotesScreenState extends State<NotesScreen> {
           TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
           TextButton(
             onPressed: () async {
-              final success = await context.read<AuthProvider>().resetPin(newPin, oldPin: oldPin);
+              final auth = context.read<AuthProvider>();
+              final success = await auth.resetPin(newPin, oldPin: oldPin);
               if (success) {
                 _showSnackbar('PIN updated successfully', AppColors.success);
                 Navigator.of(ctx).pop();
               } else {
-                _showSnackbar('Failed to update PIN', AppColors.error);
+                _showSnackbar(auth.errorMessage ?? 'Failed to update PIN', AppColors.error);
               }
             },
             child: const Text('Change', style: TextStyle(color: AppColors.accent)),
