@@ -22,6 +22,7 @@ A new developer should be able to read these docs from top to bottom and fully u
 | [day-06.md](./day-06.md) | 🚀 Background Tasks (Fire-and-Forget), Note Export, Activity Logging |
 | [day-07.md](./day-07.md) | 📡 StreamingResponse & Server-Sent Events (SSE), Streamed Export |
 | [day-08.md](./day-08.md) | 📱 Flutter Client — Dio + SSE streaming, Result<T> pattern, all API endpoints |
+| [day-09.md](./day-09.md) | 🛡️ Security Hardening: PIN Protection & Alembic Migrations |
 | [deployment-guide.md](./deployment-guide.md) | ⭐ Reusable step-by-step deployment reference — use this for any future project |
 
 ---
@@ -67,10 +68,13 @@ my-fastapi-app/
 │
 ├── exports/                   ← Generated Markdown export files (gitignored)
 ├── database.py                ← SQLAlchemy engine, session factory, get_db()
-├── main.py                    ← App entry point, table auto-creation, route registration, global exception handlers
+├── main.py                    ← App entry point, route registration, global exception handlers
+├── migrations/                ← Database migration history (Alembic)
+├── alembic.ini                ← Alembic configuration file
 ├── requirements.txt           ← Python dependencies
 ├── .env                       ← Environment variables (Secrets)
-└── .gitignore                 ← Files excluded from version control
+├── .gitignore                 ← Files excluded from version control
+└── .dockerignore              ← Files excluded from Docker builds
 ```
 
 ---
@@ -100,3 +104,7 @@ my-fastapi-app/
 | SSE (Server-Sent Events) | HTTP-based protocol for real-time server → client push (Content-Type: text/event-stream) |
 | Async Generator | `async def` + `yield` — produces values one at a time without blocking the event loop |
 | `X-Accel-Buffering: no` | Header that disables Nginx response buffering — critical for SSE to work behind a proxy |
+| **Alembic** | Database migration engine — tracks schema changes over time |
+| **PIN Gating** | Security pattern that locks specific content behind a secondary authentication layer |
+| **Bcrypt Hashing** | Industry-standard hashing used for both passwords and PINs for maximum security |
+| **Batch Mode** | Special Alembic mode for SQLite that enables advanced table modifications |
